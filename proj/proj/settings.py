@@ -29,7 +29,7 @@ SECRET_KEY = 'django-insecure-2s(+ctluo+a(qhk3#v4_tt0l0+6ezallmabg3==0gy%)3azuf#
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["stripe-payment-kanans-projects-668746ba.vercel.app", "localhost", "127.0.0.1"]
 
 
 # Application definition
