@@ -16,6 +16,10 @@
     </style>
 </head>
 <body>
+    <div class="header-links" style="margin-bottom: 20px;">
+        <a href="{% url 'item_list' %}" style="color: #007bff; text-decoration: none; margin-right: 20px;">Items</a>
+        <a href="{% url 'order_list' %}" style="color: #007bff; text-decoration: none; margin-right: 20px;">Orders</a>
+    </div>
     <h1>Create New Order</h1>
     
     {% if messages %}

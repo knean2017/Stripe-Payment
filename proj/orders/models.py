@@ -8,32 +8,40 @@ from decimal import Decimal
 
 class Discount(models.Model):
     DISCOUNT_TYPE_CHOICES = [
-        ('percentage', 'Percentage'),
-        ('fixed', 'Fixed Amount'),
+        ("percentage", "Percentage"),
+        ("fixed", "Fixed Amount"),
     ]
 
     CURRENCY_CHOICES = [
-        ('usd', 'USD'),
-        ('eur', 'EUR'),
+        ("usd", "USD"),
+        ("eur", "EUR"),
     ]
     
     name = models.CharField(max_length=255)
-    discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPE_CHOICES, default='percentage')
+    discount_type = models.CharField(
+        max_length=20, 
+        choices=DISCOUNT_TYPE_CHOICES, 
+        default="percentage"
+    )
     value = models.DecimalField(
         max_digits=10, 
         decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01'))]
+        validators=[MinValueValidator(Decimal("0.01"))]
     )
-    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='usd')  # Only for fixed discounts
+    currency = models.CharField(
+        max_length=3,
+        choices=CURRENCY_CHOICES,
+        default="usd"
+    )
     
     def __str__(self):
-        if self.discount_type == 'percentage':
+        if self.discount_type == "percentage":
             return f"{self.name} ({self.value}%)"
         return f"{self.name} ({self.value} {self.currency.upper()})"
     
     def calculate_discount(self, subtotal):
         """Calculate discount amount based on subtotal"""
-        if self.discount_type == 'percentage':
+        if self.discount_type == "percentage":
             return subtotal * (self.value / 100)
         return self.value
 
@@ -43,7 +51,7 @@ class Tax(models.Model):
     percentage = models.DecimalField(
         max_digits=5, 
         decimal_places=2,
-        validators=[MinValueValidator(Decimal('0.01')), MaxValueValidator(Decimal('100.00'))]
+        validators=[MinValueValidator(Decimal("0.01")), MaxValueValidator(Decimal("100.00"))]
     )
     
     def __str__(self):
@@ -56,18 +64,18 @@ class Tax(models.Model):
 
 class Order(models.Model):
     CURRENCY_CHOICES = [
-        ('usd', 'USD'),
-        ('eur', 'EUR'),
+        ("usd", "USD"),
+        ("eur", "EUR"),
     ]
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default='usd')
+    currency = models.CharField(max_length=3, choices=CURRENCY_CHOICES, default="usd")
     is_paid = models.BooleanField(default=False)
     stripe_session_id = models.CharField(max_length=255, blank=True, null=True)
     stripe_payment_intent_id = models.CharField(max_length=255, blank=True, null=True)
-    discount = models.ForeignKey(Discount, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
-    tax = models.ForeignKey(Tax, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
+    discount = models.ForeignKey(Discount, on_delete=models.SET_NULL, null=True, blank=True, related_name="orders")
+    tax = models.ForeignKey(Tax, on_delete=models.SET_NULL, null=True, blank=True, related_name="orders")
     
     def __str__(self):
         return f"Order #{self.id} - {self.created_at.strftime('%Y-%m-%d')}"
@@ -80,7 +88,7 @@ class Order(models.Model):
         """Calculate discount amount"""
         if self.discount:
             return self.discount.calculate_discount(self.get_subtotal())
-        return Decimal('0.00')
+        return Decimal("0.00")
     
     def get_amount_after_discount(self):
         """Calculate amount after discount but before tax"""
@@ -90,7 +98,7 @@ class Order(models.Model):
         """Calculate tax amount on discounted total"""
         if self.tax:
             return self.tax.calculate_tax(self.get_amount_after_discount())
-        return Decimal('0.00')
+        return Decimal("0.00")
     
     def get_total(self):
         """Calculate final total (subtotal - discount + tax)"""
@@ -102,13 +110,13 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, related_name='order_items', on_delete=models.CASCADE)
+    order = models.ForeignKey(Order, related_name="order_items", on_delete=models.CASCADE)
     item = models.ForeignKey(Item, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField(default=1)
     price_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
     
     class Meta:
-        unique_together = ('order', 'item')
+        unique_together = ("order", "item")
     
     def __str__(self):
         return f"{self.quantity}x {self.item.name} in Order #{self.order.id}"

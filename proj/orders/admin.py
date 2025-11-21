@@ -5,19 +5,19 @@ from .models import Order, OrderItem, Discount, Tax
 
 @admin.register(Discount)
 class DiscountAdmin(admin.ModelAdmin):
-    list_display = ('name', 'discount_type', 'value', 'currency')
-    list_filter = ('discount_type',)
+    list_display = ("name", "discount_type", "value", "currency")
+    list_filter = ("discount_type",)
 
 
 @admin.register(Tax)
 class TaxAdmin(admin.ModelAdmin):
-    list_display = ('name', 'percentage')
+    list_display = ("name", "percentage")
 
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 1
-    readonly_fields = ('get_subtotal',)
+    readonly_fields = ("get_subtotal",)
     
     def get_subtotal(self, obj):
         if obj.id:
@@ -28,9 +28,9 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ('id', 'created_at', 'currency', 'discount', 'tax', 'is_paid', 'display_total')
-    list_filter = ('is_paid', 'currency', 'created_at', 'discount', 'tax')
-    readonly_fields = ('created_at', 'updated_at', 'stripe_session_id', 'display_subtotal', 'display_discount', 'display_tax', 'display_total')
+    list_display = ("id", "created_at", "currency", "discount", "tax", "is_paid", "display_total")
+    list_filter = ("is_paid", "currency", "created_at", "discount", "tax")
+    readonly_fields = ("created_at", "updated_at", "stripe_session_id", "display_subtotal", "display_discount", "display_tax", "display_total")
     inlines = [OrderItemInline]
     
     def display_subtotal(self, obj):
@@ -52,9 +52,9 @@ class OrderAdmin(admin.ModelAdmin):
 
 @admin.register(OrderItem)
 class OrderItemAdmin(admin.ModelAdmin):
-    list_display = ('id', 'order', 'item', 'quantity', 'price_at_purchase', 'display_subtotal')
-    list_filter = ('order',)
-    readonly_fields = ('display_subtotal',)
+    list_display = ("id", "order", "item", "quantity", "price_at_purchase", "display_subtotal")
+    list_filter = ("order",)
+    readonly_fields = ("display_subtotal",)
     
     def display_subtotal(self, obj):
         return f"${obj.get_subtotal():.2f}"

@@ -3,7 +3,6 @@
   <head>
     <meta charset="utf-8" />
     <title>{{ item.name }}</title>
-    <script src="https://js.stripe.com/v3/"></script>
     <style>
       body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
       .header-links { margin-bottom: 20px; }
@@ -16,9 +15,7 @@
       button { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 16px; }
       button:hover { background: #0056b3; }
       button:disabled { opacity: .6; cursor: not-allowed; }
-      #payment-form { margin-top: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; display: none; }
-      #card-element { padding: 12px; border: 1px solid #ccc; border-radius: 4px; margin: 10px 0; }
-      .card-errors { color: #dc3545; margin-top: 10px; }
+      form { margin-top: 10px; }
     </style>
   </head>
   <body>
@@ -30,76 +27,42 @@
     <div class="card">
       <h1>{{ item.name }}</h1>
       <div class="description">{{ item.description|default:"No description available." }}</div>
-      <div class="price">${{ item.price }}</div>
-      <button id="buyBtn">Buy Now</button>
       
-      <div id="payment-form">
-        <div id="card-element"></div>
-        <div id="card-errors" role="alert"></div>
-        <button id="submit-button" type="submit">Pay ${{ item.price }}</button>
+      <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+        <label for="currency-selector" style="margin-right: 10px; font-weight: bold;">Currency:</label>
+        <select id="currency-selector" name="currency" data-rate="{{ usd_to_eur_rate }}" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+          <option value="usd" selected>USD - US Dollar</option>
+          <option value="eur">EUR - Euro</option>
+        </select>
       </div>
+      
+      <div class="price" id="price-display" data-usd-price="{{ item.price }}">${{ item.price }} USD</div>
+      
+      <form id="buy-form" method="GET" action="{% url 'item_buy' item.id %}">
+        <input type="hidden" name="currency" id="currency-input" value="usd">
+        <button type="submit" id="buyBtn">Buy Now</button>
+      </form>
     </div>
 
     <script>
-      const stripe = Stripe('{{ stripe_publishable_key }}');
-      const buyBtn = document.getElementById('buyBtn');
-      const paymentForm = document.getElementById('payment-form');
-      const submitButton = document.getElementById('submit-button');
-      let elements, cardElement, clientSecret;
+      const currencySelector = document.getElementById('currency-selector');
+      const priceDisplay = document.getElementById('price-display');
+      const currencyInput = document.getElementById('currency-input');
+      const usdToEurRate = parseFloat(currencySelector.getAttribute('data-rate'));
       
-      buyBtn.addEventListener('click', async () => {
-        buyBtn.disabled = true;
-        buyBtn.textContent = 'Loading...';
+      // Update price display when currency changes
+      currencySelector.addEventListener('change', () => {
+        const selectedCurrency = currencySelector.value;
+        const usdPrice = parseFloat(priceDisplay.getAttribute('data-usd-price'));
+        currencyInput.value = selectedCurrency;
         
-        try {
-          const res = await fetch("{% url 'item_buy' item.id %}");
-          if (!res.ok) throw new Error('Failed to create payment');
-          const data = await res.json();
-          clientSecret = data.client_secret;
-          
-          elements = stripe.elements();
-          cardElement = elements.create('card');
-          cardElement.mount('#card-element');
-          
-          cardElement.on('change', ({error}) => {
-            const displayError = document.getElementById('card-errors');
-            if (error) {
-              displayError.textContent = error.message;
-            } else {
-              displayError.textContent = '';
-            }
-          });
-          
-          buyBtn.style.display = 'none';
-          paymentForm.style.display = 'block';
-        } catch (e) {
-          alert(e.message || 'Error loading payment form');
-          buyBtn.disabled = false;
-          buyBtn.textContent = 'Buy Now';
+        if (selectedCurrency === 'eur') {
+          const eurPrice = (usdPrice * usdToEurRate).toFixed(2);
+          priceDisplay.textContent = `€${eurPrice} EUR`;
+        } else {
+          priceDisplay.textContent = `$${usdPrice.toFixed(2)} USD`;
         }
       });
-      
-      if (submitButton) {
-        submitButton.addEventListener('click', async (e) => {
-          e.preventDefault();
-          submitButton.disabled = true;
-          submitButton.textContent = 'Processing...';
-          
-          const {error, paymentIntent} = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: {
-              card: cardElement,
-            }
-          });
-          
-          if (error) {
-            document.getElementById('card-errors').textContent = error.message;
-            submitButton.disabled = false;
-            submitButton.textContent = 'Pay ${{ item.price }}';
-          } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-            window.location.href = "{% url 'item_success' %}";
-          }
-        });
-      }
     </script>
   </body>
 </html>

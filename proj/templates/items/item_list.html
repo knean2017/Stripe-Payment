@@ -26,13 +26,21 @@
         <a href="{% url 'create_order' %}">Create Order</a>
     </div>
     
+    <div style="margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+        <label for="currency-selector" style="margin-right: 10px; font-weight: bold;">Currency:</label>
+        <select id="currency-selector" name="currency" data-rate="{{ usd_to_eur_rate }}" style="padding: 8px; border-radius: 4px; border: 1px solid #ddd;">
+            <option value="usd" selected>USD - US Dollar</option>
+            <option value="eur">EUR - Euro</option>
+        </select>
+    </div>
+    
     {% if items %}
     <div class="items-grid">
         {% for item in items %}
-        <div class="item-card">
+        <div class="item-card" data-usd-price="{{ item.price }}">
             <div class="item-name">{{ item.name }}</div>
             <div class="item-description">{{ item.description|default:"No description available." }}</div>
-            <div class="item-price">${{ item.price }}</div>
+            <div class="item-price" data-currency="usd">${{ item.price }} USD</div>
             <a href="{% url 'item_detail' item.id %}" class="item-link">View Details</a>
         </div>
         {% endfor %}
@@ -40,6 +48,33 @@
     {% else %}
     <p>No items available.</p>
     {% endif %}
+    
+    <script>
+        const currencySelector = document.getElementById('currency-selector');
+        const itemCards = document.querySelectorAll('.item-card');
+        const usdToEurRate = parseFloat(currencySelector.getAttribute('data-rate'));
+        
+        function updatePrices() {
+            const selectedCurrency = currencySelector.value;
+            
+            itemCards.forEach(card => {
+                const priceElement = card.querySelector('.item-price');
+                const usdPrice = parseFloat(card.getAttribute('data-usd-price'));
+                
+                if (selectedCurrency === 'eur') {
+                    const eurPrice = (usdPrice * usdToEurRate).toFixed(2);
+                    priceElement.textContent = `€${eurPrice} EUR`;
+                    priceElement.setAttribute('data-currency', 'eur');
+                } else {
+                    priceElement.textContent = `$${usdPrice.toFixed(2)} USD`;
+                    priceElement.setAttribute('data-currency', 'usd');
+                }
+            });
+        }
+        
+        currencySelector.addEventListener('change', updatePrices);
+        updatePrices();
+    </script>
 </body>
 </html>
 

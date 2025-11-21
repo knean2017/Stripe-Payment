@@ -1,48 +1,64 @@
-from django.http import JsonResponse, HttpResponse
 from django.conf import settings
-from django.shortcuts import get_object_or_404, render
-from django.urls import reverse
+from django.shortcuts import get_object_or_404, render, redirect
 from .models import Item
-import stripe
 
 
 def item_list(request):
     """Display list of all items"""
     items = Item.objects.all()
-    context = {'items': items}
-    return render(request, 'items/item_list.html', context)
+    context = {
+        "items": items,
+        "usd_to_eur_rate": settings.USD_TO_EUR_RATE,
+    }
+    return render(request, "items/item_list.html", context)
 
 
 def buy(request, id):
-    stripe.api_key = settings.STRIPE_SECRET_KEY
+    """Create an order with the selected item and redirect to order detail"""
+    # Lazy import to avoid circular import
+    from orders.models import Order, OrderItem
+    from orders.utils import convert_price
+    
     item = get_object_or_404(Item, pk=id)
-    amount = int(item.price * 100)
-
-    payment_intent = stripe.PaymentIntent.create(
-        amount=amount,
-        currency='usd',
-        metadata={'item_id': item.id, 'item_name': item.name},
-        automatic_payment_methods={'enabled': True},
+    
+    # Get currency from request (default to USD)
+    currency = request.GET.get("currency", "usd")
+    if currency not in ["usd", "eur"]:
+        currency = "usd"
+    
+    # Create order with this single item (quantity 1)
+    order = Order.objects.create(currency=currency)
+    
+    # Convert price if EUR is selected
+    if currency == "eur":
+        converted_price = convert_price(item.price, "usd", "eur")
+    else:
+        converted_price = item.price
+    
+    # Create order item
+    OrderItem.objects.create(
+        order=order,
+        item=item,
+        quantity=1,
+        price_at_purchase=converted_price
     )
-
-    return JsonResponse({
-        'client_secret': payment_intent.client_secret,
-        'payment_intent_id': payment_intent.id
-    })
+    
+    # Redirect to order detail page
+    return redirect("order_detail", id=order.id)
 
 
 def item_detail(request, id):
     item = get_object_or_404(Item, pk=id)
     context = {
-        'item': item,
-        'stripe_publishable_key': settings.STRIPE_PUBLISHABLE_KEY,
+        "item": item,
+        "usd_to_eur_rate": settings.USD_TO_EUR_RATE,
     }
-    return render(request, 'items/item_detail.html', context)
+    return render(request, "items/item_detail.html", context)
 
 
 def success(request):
-    return render(request, 'items/success.html')
+    return render(request, "items/success.html")
 
 
 def cancel(request):
-    return render(request, 'items/cancel.html')
+    return render(request, "items/cancel.html")
