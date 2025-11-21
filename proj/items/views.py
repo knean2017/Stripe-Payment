@@ -16,23 +16,19 @@ def item_list(request):
 def buy(request, id):
     stripe.api_key = settings.STRIPE_SECRET_KEY
     item = get_object_or_404(Item, pk=id)
-    unit_amount = int(item.price * 100)
+    amount = int(item.price * 100)
 
-    session = stripe.checkout.Session.create(
-        mode='payment',
-        line_items=[{
-            'price_data': {
-                'currency': 'usd',
-                'product_data': {'name': item.name},
-                'unit_amount': unit_amount,
-            },
-            'quantity': 1,
-        }],
-        success_url=request.build_absolute_uri(reverse('item_success')),
-        cancel_url=request.build_absolute_uri(reverse('item_cancel')),
+    payment_intent = stripe.PaymentIntent.create(
+        amount=amount,
+        currency='usd',
+        metadata={'item_id': item.id, 'item_name': item.name},
+        automatic_payment_methods={'enabled': True},
     )
 
-    return JsonResponse({'id': session.id})
+    return JsonResponse({
+        'client_secret': payment_intent.client_secret,
+        'payment_intent_id': payment_intent.id
+    })
 
 
 def item_detail(request, id):

@@ -13,8 +13,12 @@
         .total { font-size: 24px; font-weight: bold; margin-top: 20px; padding-top: 20px; border-top: 2px solid #333; }
         button { background: #28a745; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; margin-top: 20px; }
         button:hover { background: #218838; }
+        button:disabled { opacity: .6; cursor: not-allowed; }
         .paid { color: #28a745; font-weight: bold; }
         .label { color: #6c757d; }
+        #payment-form { margin-top: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; display: none; }
+        #card-element { padding: 12px; border: 1px solid #ccc; border-radius: 4px; margin: 10px 0; }
+        .card-errors { color: #dc3545; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -60,31 +64,86 @@
     </div>
     
     {% if not order.is_paid %}
-    <button id="checkout-button">Proceed to Payment</button>
+    <button id="payment-button">Proceed to Payment</button>
+    
+    <div id="payment-form">
+        <div id="card-element"></div>
+        <div id="card-errors" role="alert"></div>
+        <button id="submit-button" type="submit">Pay ${{ order.get_total }} {{ order.currency|upper }}</button>
+    </div>
     {% endif %}
     
     <script>
         const stripe = Stripe('{{ stripe_publishable_key }}');
-        const checkoutButton = document.getElementById('checkout-button');
+        const paymentButton = document.getElementById('payment-button');
+        const paymentForm = document.getElementById('payment-form');
+        const submitButton = document.getElementById('submit-button');
+        let elements, cardElement, clientSecret;
         
-        if (checkoutButton) {
-            checkoutButton.addEventListener('click', async () => {
-                const response = await fetch('/orders/{{ order.id }}/buy/', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRFToken': '{{ csrf_token }}'
+        if (paymentButton) {
+            paymentButton.addEventListener('click', async () => {
+                paymentButton.disabled = true;
+                paymentButton.textContent = 'Loading...';
+                
+                try {
+                    const response = await fetch('/orders/{{ order.id }}/buy/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to create payment');
                     }
-                });
-                const session = await response.json();
-                
-                const result = await stripe.redirectToCheckout({
-                    sessionId: session.id
-                });
-                
-                if (result.error) {
-                    alert(result.error.message);
+                    
+                    const data = await response.json();
+                    clientSecret = data.client_secret;
+                    
+                    elements = stripe.elements();
+                    cardElement = elements.create('card');
+                    cardElement.mount('#card-element');
+                    
+                    cardElement.on('change', ({error}) => {
+                        const displayError = document.getElementById('card-errors');
+                        if (error) {
+                            displayError.textContent = error.message;
+                        } else {
+                            displayError.textContent = '';
+                        }
+                    });
+                    
+                    paymentButton.style.display = 'none';
+                    paymentForm.style.display = 'block';
+                } catch (error) {
+                    alert(error.message || 'Error loading payment form');
+                    paymentButton.disabled = false;
+                    paymentButton.textContent = 'Proceed to Payment';
                 }
             });
+            
+            if (submitButton) {
+                submitButton.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Processing...';
+                    
+                    const {error, paymentIntent} = await stripe.confirmCardPayment(clientSecret, {
+                        payment_method: {
+                            card: cardElement,
+                        }
+                    });
+                    
+                    if (error) {
+                        document.getElementById('card-errors').textContent = error.message;
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Pay ${{ order.get_total }} {{ order.currency|upper }}';
+                    } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+                        window.location.href = '/orders/{{ order.id }}/success/';
+                    }
+                });
+            }
         }
     </script>
 </body>

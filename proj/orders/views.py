@@ -5,10 +5,12 @@ from django.shortcuts import get_object_or_404, render, redirect
 from django.urls import reverse
 from django.contrib import messages
 from django.views.decorators.http import require_http_methods
+from django.views.decorators.csrf import csrf_exempt
 from .models import Order, OrderItem, Discount, Tax
 from .utils import convert_price
 from items.models import Item
 import stripe
+import json
 
 
 def create_order(request):
@@ -105,7 +107,7 @@ def order_detail(request, id):
 
 
 def buy_order(request, id):
-    """Create Stripe checkout session for the entire order"""
+    """Create Stripe PaymentIntent for the entire order"""
     stripe.api_key = settings.STRIPE_SECRET_KEY
     order = get_object_or_404(Order, pk=id)
     
@@ -113,74 +115,40 @@ def buy_order(request, id):
     if not order.order_items.exists():
         return JsonResponse({'error': 'Order has no items'}, status=400)
     
-    # Add tax if present - using automatic tax display
-    if order.tax:
-        # Add tax as a line item to show it clearly
-        tax_rate = stripe.TaxRate.create(
-            display_name=order.tax.name,
-            percentage=float(order.tax.percentage),
-            inclusive=False,
-        )
-        tax_rate_id = tax_rate.id
+    # Calculate total amount (already includes discount and tax)
+    total_amount = order.get_total_cents()
+    
+    # Create or retrieve PaymentIntent
+    if order.stripe_payment_intent_id:
+        try:
+            payment_intent = stripe.PaymentIntent.retrieve(order.stripe_payment_intent_id)
+            # Update amount if it changed
+            if payment_intent.amount != total_amount:
+                payment_intent = stripe.PaymentIntent.modify(
+                    order.stripe_payment_intent_id,
+                    amount=total_amount,
+                )
+        except stripe.error.InvalidRequestError:
+            # PaymentIntent doesn't exist, create new one
+            payment_intent = None
     else:
-        tax_rate_id = None
-
-    # Build line items for Stripe
-    line_items = []
-    for order_item in order.order_items.all():
-        item_data = {
-            'price_data': {
-                'currency': order.currency,
-                'product_data': {
-                    'name': order_item.item.name,
-                    'description': order_item.item.description,
-                },
-                'unit_amount': int(order_item.price_at_purchase * 100),
-            },
-            'quantity': order_item.quantity,
-        }
-        if tax_rate_id:
-            item_data['tax_rates'] = [tax_rate_id]
-        line_items.append(item_data)
+        payment_intent = None
     
-    # Prepare session parameters
-    session_params = {
-        'mode': 'payment',
-        'line_items': line_items,
-        'success_url': request.build_absolute_uri(reverse('order_success', kwargs={'id': order.id})),
-        'cancel_url': request.build_absolute_uri(reverse('order_cancel', kwargs={'id': order.id})),
-        'metadata': {'order_id': order.id},
-    }
+    if not payment_intent:
+        # Create new PaymentIntent
+        payment_intent = stripe.PaymentIntent.create(
+            amount=total_amount,
+            currency=order.currency,
+            metadata={'order_id': order.id},
+            automatic_payment_methods={'enabled': True},
+        )
+        order.stripe_payment_intent_id = payment_intent.id
+        order.save()
     
-    # Add discount if present
-    if order.discount:
-        if order.discount.discount_type == 'percentage':
-            # Create a coupon for percentage discount
-            coupon = stripe.Coupon.create(
-                percent_off=float(order.discount.value),
-                duration='once',
-                name=order.discount.name,
-            )
-            session_params['discounts'] = [{'coupon': coupon.id}]
-        else:
-            # For fixed amount discount, create a coupon
-            coupon = stripe.Coupon.create(
-                amount_off=int(order.discount.value * 100),
-                currency=order.currency,
-                duration='once',
-                name=order.discount.name,
-            )
-            session_params['discounts'] = [{'coupon': coupon.id}]
-    
-    
-    # Create Stripe checkout session
-    session = stripe.checkout.Session.create(**session_params)
-    
-    # Save session ID to order
-    order.stripe_session_id = session.id
-    order.save()
-    
-    return JsonResponse({'id': session.id})
+    return JsonResponse({
+        'client_secret': payment_intent.client_secret,
+        'payment_intent_id': payment_intent.id
+    })
 
 
 def order_success(request, id):
@@ -205,3 +173,35 @@ def order_list(request):
     orders = Order.objects.all().order_by('-created_at')
     context = {'orders': orders}
     return render(request, 'orders/order_list.html', context)
+
+
+@csrf_exempt
+def stripe_webhook(request):
+    """Handle Stripe webhook events"""
+    payload = request.body
+    sig_header = request.META.get('HTTP_STRIPE_SIGNATURE')
+    endpoint_secret = getattr(settings, 'STRIPE_WEBHOOK_SECRET', None)
+    
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, endpoint_secret
+        )
+    except ValueError:
+        return HttpResponse(status=400)
+    except stripe.error.SignatureVerificationError:
+        return HttpResponse(status=400)
+    
+    if event['type'] == 'payment_intent.succeeded':
+        payment_intent = event['data']['object']
+        payment_intent_id = payment_intent['id']
+        
+        # Find order by payment_intent_id
+        try:
+            order = Order.objects.get(stripe_payment_intent_id=payment_intent_id)
+            if not order.is_paid:
+                order.is_paid = True
+                order.save()
+        except Order.DoesNotExist:
+            pass
+    
+    return HttpResponse(status=200)

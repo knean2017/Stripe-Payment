@@ -16,6 +16,9 @@
       button { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 16px; }
       button:hover { background: #0056b3; }
       button:disabled { opacity: .6; cursor: not-allowed; }
+      #payment-form { margin-top: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; display: none; }
+      #card-element { padding: 12px; border: 1px solid #ccc; border-radius: 4px; margin: 10px 0; }
+      .card-errors { color: #dc3545; margin-top: 10px; }
     </style>
   </head>
   <body>
@@ -29,25 +32,74 @@
       <div class="description">{{ item.description|default:"No description available." }}</div>
       <div class="price">${{ item.price }}</div>
       <button id="buyBtn">Buy Now</button>
+      
+      <div id="payment-form">
+        <div id="card-element"></div>
+        <div id="card-errors" role="alert"></div>
+        <button id="submit-button" type="submit">Pay ${{ item.price }}</button>
+      </div>
     </div>
 
     <script>
       const stripe = Stripe('{{ stripe_publishable_key }}');
-      const btn = document.getElementById('buyBtn');
-      btn.addEventListener('click', async () => {
-        btn.disabled = true;
+      const buyBtn = document.getElementById('buyBtn');
+      const paymentForm = document.getElementById('payment-form');
+      const submitButton = document.getElementById('submit-button');
+      let elements, cardElement, clientSecret;
+      
+      buyBtn.addEventListener('click', async () => {
+        buyBtn.disabled = true;
+        buyBtn.textContent = 'Loading...';
+        
         try {
           const res = await fetch("{% url 'item_buy' item.id %}");
-          if (!res.ok) throw new Error('Failed to create session');
+          if (!res.ok) throw new Error('Failed to create payment');
           const data = await res.json();
-          const result = await stripe.redirectToCheckout({ sessionId: data.id });
-          if (result.error) alert(result.error.message);
+          clientSecret = data.client_secret;
+          
+          elements = stripe.elements();
+          cardElement = elements.create('card');
+          cardElement.mount('#card-element');
+          
+          cardElement.on('change', ({error}) => {
+            const displayError = document.getElementById('card-errors');
+            if (error) {
+              displayError.textContent = error.message;
+            } else {
+              displayError.textContent = '';
+            }
+          });
+          
+          buyBtn.style.display = 'none';
+          paymentForm.style.display = 'block';
         } catch (e) {
-          alert(e.message || 'Error');
-        } finally {
-          btn.disabled = false;
+          alert(e.message || 'Error loading payment form');
+          buyBtn.disabled = false;
+          buyBtn.textContent = 'Buy Now';
         }
       });
+      
+      if (submitButton) {
+        submitButton.addEventListener('click', async (e) => {
+          e.preventDefault();
+          submitButton.disabled = true;
+          submitButton.textContent = 'Processing...';
+          
+          const {error, paymentIntent} = await stripe.confirmCardPayment(clientSecret, {
+            payment_method: {
+              card: cardElement,
+            }
+          });
+          
+          if (error) {
+            document.getElementById('card-errors').textContent = error.message;
+            submitButton.disabled = false;
+            submitButton.textContent = 'Pay ${{ item.price }}';
+          } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+            window.location.href = "{% url 'item_success' %}";
+          }
+        });
+      }
     </script>
   </body>
 </html>
