@@ -1,5 +1,4 @@
 from typing import List, Tuple, Optional
-from django.contrib import messages
 from items.models import Item
 from orders.models import Order, OrderItem, Discount, Tax
 from orders.utils import convert_price

@@ -1,4 +1,5 @@
 import stripe
+from stripe import InvalidRequestError
 from django.conf import settings
 from typing import Dict, Optional
 
@@ -44,7 +45,7 @@ def create_payment_intent_for_order(order) -> Dict[str, str]:
                 "client_secret": payment_intent.client_secret,
                 "payment_intent_id": payment_intent.id
             }
-        except stripe.error.InvalidRequestError:
+        except InvalidRequestError:
             # PaymentIntent doesn't exist, create new one
             pass
     

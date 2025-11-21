@@ -19,6 +19,7 @@
         #payment-form { margin-top: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; display: none; }
         #card-element { padding: 12px; border: 1px solid #ccc; border-radius: 4px; margin: 10px 0; }
         .card-errors { color: #dc3545; margin-top: 10px; }
+        .payment-buttons { display: flex; gap: 10px; margin-top: 15px; }
     </style>
 </head>
 <body>
@@ -74,7 +75,10 @@
     <div id="payment-form">
         <div id="card-element"></div>
         <div id="card-errors" role="alert"></div>
-        <button id="submit-button" type="submit">Pay ${{ order.get_total }} {{ order.currency|upper }}</button>
+        <div class="payment-buttons">
+            <button id="submit-button" type="submit">Pay ${{ order.get_total }} {{ order.currency|upper }}</button>
+            <button id="cancel-button" type="button" class="btn-cancel">Cancel</button>
+        </div>
     </div>
     {% endif %}
     
@@ -83,6 +87,7 @@
         const paymentButton = document.getElementById('payment-button');
         const paymentForm = document.getElementById('payment-form');
         const submitButton = document.getElementById('submit-button');
+        const cancelButton = document.getElementById('cancel-button');
         let elements, cardElement, clientSecret;
         
         if (paymentButton) {
@@ -127,6 +132,13 @@
                     paymentButton.textContent = 'Proceed to Payment';
                 }
             });
+            
+            if (cancelButton) {
+                cancelButton.addEventListener('click', () => {
+                    // Redirect to cancel page
+                    window.location.href = '/orders/{{ order.id }}/cancel/';
+                });
+            }
             
             if (submitButton) {
                 submitButton.addEventListener('click', async (e) => {

@@ -1,65 +1,9 @@
-# orders/models.py
-from random import choices
+"""
+Order and OrderItem models.
+These models are closely related and kept together.
+"""
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
-from items.models import Item
 from decimal import Decimal
-
-
-class Discount(models.Model):
-    DISCOUNT_TYPE_CHOICES = [
-        ("percentage", "Percentage"),
-        ("fixed", "Fixed Amount"),
-    ]
-
-    CURRENCY_CHOICES = [
-        ("usd", "USD"),
-        ("eur", "EUR"),
-    ]
-    
-    name = models.CharField(max_length=255)
-    discount_type = models.CharField(
-        max_length=20, 
-        choices=DISCOUNT_TYPE_CHOICES, 
-        default="percentage"
-    )
-    value = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal("0.01"))]
-    )
-    currency = models.CharField(
-        max_length=3,
-        choices=CURRENCY_CHOICES,
-        default="usd"
-    )
-    
-    def __str__(self):
-        if self.discount_type == "percentage":
-            return f"{self.name} ({self.value}%)"
-        return f"{self.name} ({self.value} {self.currency.upper()})"
-    
-    def calculate_discount(self, subtotal):
-        """Calculate discount amount based on subtotal"""
-        if self.discount_type == "percentage":
-            return subtotal * (self.value / 100)
-        return self.value
-
-
-class Tax(models.Model):
-    name = models.CharField(max_length=255)
-    percentage = models.DecimalField(
-        max_digits=5, 
-        decimal_places=2,
-        validators=[MinValueValidator(Decimal("0.01")), MaxValueValidator(Decimal("100.00"))]
-    )
-    
-    def __str__(self):
-        return f"{self.name} ({self.percentage}%)"
-    
-    def calculate_tax(self, amount):
-        """Calculate tax amount based on given amount"""
-        return amount * (self.percentage / 100)
 
 
 class Order(models.Model):
@@ -74,8 +18,20 @@ class Order(models.Model):
     is_paid = models.BooleanField(default=False)
     stripe_session_id = models.CharField(max_length=255, blank=True, null=True)
     stripe_payment_intent_id = models.CharField(max_length=255, blank=True, null=True)
-    discount = models.ForeignKey(Discount, on_delete=models.SET_NULL, null=True, blank=True, related_name="orders")
-    tax = models.ForeignKey(Tax, on_delete=models.SET_NULL, null=True, blank=True, related_name="orders")
+    discount = models.ForeignKey(
+        "Discount", 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name="orders"
+    )
+    tax = models.ForeignKey(
+        "Tax", 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name="orders"
+    )
     
     def __str__(self):
         return f"Order #{self.id} - {self.created_at.strftime('%Y-%m-%d')}"
@@ -110,8 +66,16 @@ class Order(models.Model):
 
 
 class OrderItem(models.Model):
-    order = models.ForeignKey(Order, related_name="order_items", on_delete=models.CASCADE)
-    item = models.ForeignKey(Item, on_delete=models.PROTECT)
+    """OrderItem model - items within an order"""
+    order = models.ForeignKey(
+        Order,
+        related_name="order_items",
+        on_delete=models.CASCADE
+    )
+    item = models.ForeignKey(
+        "items.Item",
+        on_delete=models.PROTECT
+    )
     quantity = models.PositiveIntegerField(default=1)
     price_at_purchase = models.DecimalField(max_digits=10, decimal_places=2)
     
@@ -126,7 +90,8 @@ class OrderItem(models.Model):
         return self.price_at_purchase * self.quantity
     
     def save(self, *args, **kwargs):
-        # Store the item's price at the time of purchase
+        # Store the item"s price at the time of purchase
         if not self.price_at_purchase:
             self.price_at_purchase = self.item.price
         super().save(*args, **kwargs)
+

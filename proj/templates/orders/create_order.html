@@ -3,7 +3,10 @@
 <head>
     <title>Create Order</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; position: relative; }
+        .cancel-icon { position: absolute; top: 20px; left: 20px; width: 40px; height: 40px; border-radius: 50%; background: #dc3545; color: white; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 24px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        .cancel-icon:hover { background: #c82333; }
+        .cancel-icon::before { content: '×'; }
         .item { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
         .item-name { font-weight: bold; font-size: 18px; }
         .item-price { color: #28a745; font-size: 16px; margin: 5px 0; }
@@ -13,6 +16,7 @@
         input[type="number"] { width: 60px; padding: 5px; }
         button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
         button:hover { background: #0056b3; }
+        .button-group { display: flex; gap: 10px; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -81,7 +85,6 @@
             </select>
         </div>
         
-        <br>
         <button type="submit">Create Order</button>
     </form>
     

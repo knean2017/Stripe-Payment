@@ -1,6 +1,6 @@
 # orders/admin.py
 from django.contrib import admin
-from .models import Order, OrderItem, Discount, Tax
+from .models import Order, OrderItem, Discount, Tax #Transaction
 
 
 @admin.register(Discount)
@@ -59,3 +59,67 @@ class OrderItemAdmin(admin.ModelAdmin):
     def display_subtotal(self, obj):
         return f"${obj.get_subtotal():.2f}"
     display_subtotal.short_description = "Subtotal"
+
+# TO DO: Implement transaction admin
+# Due to Sandbox mode, we cannot test the transaction admin fully.
+
+# @admin.register(Transaction)
+# class TransactionAdmin(admin.ModelAdmin):
+#     list_display = ("id", "order", "stripe_payment_intent_id", "status", "amount", "currency", "created_at")
+#     list_filter = ("status", "transaction_type", "currency", "created_at")
+#     readonly_fields = (
+#         "stripe_payment_intent_id",
+#         "stripe_charge_id",
+#         "stripe_created_at",
+#         "receipt_url",
+#         "raw_stripe_data",
+#         "created_at",
+#         "updated_at"
+#     )
+#     search_fields = ("stripe_payment_intent_id", "stripe_charge_id", "order__id")
+#     ordering = ("-created_at",)
+    
+#     fieldsets = (
+#         ("Order Information", {
+#             "fields": ("order",)
+#         }),
+#         ("Stripe Information", {
+#             "fields": (
+#                 "stripe_payment_intent_id",
+#                 "stripe_charge_id",
+#                 "stripe_created_at",
+#                 "receipt_url"
+#             )
+#         }),
+#         ("Transaction Details", {
+#             "fields": (
+#                 "transaction_type",
+#                 "status",
+#                 "amount",
+#                 "currency",
+#                 "amount_refunded",
+#             )
+#         }),
+#         ("Payment Method", {
+#             "fields": (
+#                 "payment_method_type",
+#                 "payment_method_last4",
+#                 "payment_method_brand",
+#             )
+#         }),
+#         ("Error Information", {
+#             "fields": (
+#                 "failure_code",
+#                 "failure_message",
+#             ),
+#             "classes": ("collapse",)
+#         }),
+#         ("Metadata", {
+#             "fields": (
+#                 "raw_stripe_data",
+#                 "created_at",
+#                 "updated_at",
+#             ),
+#             "classes": ("collapse",)
+#         }),
+#     )
