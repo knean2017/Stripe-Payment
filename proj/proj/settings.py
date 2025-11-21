@@ -29,14 +29,7 @@ SECRET_KEY = os.environ.get("SECRET_KEY", "django-insecure-2s(+ctluo+a(qhk3#v4_t
 # SECURITY WARNING: don"t run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
-# Allow Vercel domains
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,0.0.0.0").split(",")
-# Add Vercel domains if deploying to Vercel
-if os.environ.get("VERCEL"):
-    ALLOWED_HOSTS.extend([
-        ".vercel.app",
-        ".now.sh",
-    ])
+ALLOWED_HOSTS = ["localhost", "127.0.0.1", "0.0.0.0"]
 
 # Application definition
 
