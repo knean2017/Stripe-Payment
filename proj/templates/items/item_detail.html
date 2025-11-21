@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>{{ item.name }}</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+      body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+      .header-links { margin-bottom: 20px; }
+      .header-links a { color: #007bff; text-decoration: none; margin-right: 20px; }
+      .header-links a:hover { text-decoration: underline; }
+      .card { padding: 30px; border: 1px solid #ddd; border-radius: 8px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+      h1 { margin: 0 0 15px; font-size: 28px; color: #333; }
+      .description { color: #666; margin-bottom: 20px; line-height: 1.6; }
+      .price { color: #28a745; font-size: 24px; font-weight: bold; margin-bottom: 25px; }
+      button { background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-size: 16px; }
+      button:hover { background: #0056b3; }
+      button:disabled { opacity: .6; cursor: not-allowed; }
+    </style>
+  </head>
+  <body>
+    <div class="header-links">
+      <a href="{% url 'item_list' %}">← Back to Items</a>
+      <a href="{% url 'order_list' %}">Orders</a>
+      <a href="{% url 'create_order' %}">Create Order</a>
+    </div>
+    <div class="card">
+      <h1>{{ item.name }}</h1>
+      <div class="description">{{ item.description|default:"No description available." }}</div>
+      <div class="price">${{ item.price }}</div>
+      <button id="buyBtn">Buy Now</button>
+    </div>
+
+    <script>
+      const stripe = Stripe('{{ stripe_publishable_key }}');
+      const btn = document.getElementById('buyBtn');
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        try {
+          const res = await fetch("{% url 'item_buy' item.id %}");
+          if (!res.ok) throw new Error('Failed to create session');
+          const data = await res.json();
+          const result = await stripe.redirectToCheckout({ sessionId: data.id });
+          if (result.error) alert(result.error.message);
+        } catch (e) {
+          alert(e.message || 'Error');
+        } finally {
+          btn.disabled = false;
+        }
+      });
+    </script>
+  </body>
+</html>

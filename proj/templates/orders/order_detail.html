@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Order #{{ order.id }}</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .order-item { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; }
+        .summary-row { display: flex; justify-content: space-between; padding: 10px 0; }
+        .subtotal { border-top: 1px solid #ddd; margin-top: 10px; padding-top: 10px; }
+        .discount { color: #dc3545; }
+        .tax { color: #6c757d; }
+        .total { font-size: 24px; font-weight: bold; margin-top: 20px; padding-top: 20px; border-top: 2px solid #333; }
+        button { background: #28a745; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; margin-top: 20px; }
+        button:hover { background: #218838; }
+        .paid { color: #28a745; font-weight: bold; }
+        .label { color: #6c757d; }
+    </style>
+</head>
+<body>
+    <h1>Order #{{ order.id }}</h1>
+    <p>Created: {{ order.created_at|date:"F d, Y H:i" }}</p>
+    
+    {% if order.is_paid %}
+        <p class="paid">✓ PAID</p>
+    {% endif %}
+    
+    <h2>Items:</h2>
+    {% for order_item in order.order_items.all %}
+    <div class="order-item">
+        <div>
+            <strong>{{ order_item.item.name }}</strong> x {{ order_item.quantity }}
+        </div>
+        <div>${{ order_item.get_subtotal }}</div>
+    </div>
+    {% endfor %}
+    
+    <div class="summary-row subtotal">
+        <div><strong>Subtotal:</strong></div>
+        <div><strong>${{ order.get_subtotal }}</strong></div>
+    </div>
+     
+    {% if order.discount %}
+    <div class="summary-row discount">
+        <div>Discount ({{ order.discount.name }}):</div>
+        <div>-${{ order.get_discount_amount }}</div>
+    </div>
+    {% endif %}
+    
+    {% if order.tax %}
+    <div class="summary-row tax">
+        <div>Tax ({{ order.tax.name }} - {{ order.tax.percentage }}%):</div>
+        <div>+${{ order.get_tax_amount }}</div>
+    </div>
+    {% endif %}
+   
+    <div class="total summary-row">
+        <div>Total:</div>
+        <div>${{ order.get_total }} {{ order.currency|upper }}</div>
+    </div>
+    
+    {% if not order.is_paid %}
+    <button id="checkout-button">Proceed to Payment</button>
+    {% endif %}
+    
+    <script>
+        const stripe = Stripe('{{ stripe_publishable_key }}');
+        const checkoutButton = document.getElementById('checkout-button');
+        
+        if (checkoutButton) {
+            checkoutButton.addEventListener('click', async () => {
+                const response = await fetch('/orders/{{ order.id }}/buy/', {
+                    method: 'POST',
+                    headers: {
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    }
+                });
+                const session = await response.json();
+                
+                const result = await stripe.redirectToCheckout({
+                    sessionId: session.id
+                });
+                
+                if (result.error) {
+                    alert(result.error.message);
+                }
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Items</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 50px auto; padding: 20px; }
+        .items-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; margin-top: 20px; }
+        .item-card { border: 1px solid #ddd; padding: 20px; border-radius: 8px; background: white; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .item-card:hover { box-shadow: 0 4px 8px rgba(0,0,0,0.15); }
+        .item-name { font-weight: bold; font-size: 20px; margin-bottom: 10px; color: #333; }
+        .item-description { color: #666; margin-bottom: 15px; min-height: 40px; }
+        .item-price { color: #28a745; font-size: 18px; font-weight: bold; margin-bottom: 15px; }
+        .item-link { display: inline-block; background: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; }
+        .item-link:hover { background: #0056b3; }
+        h1 { color: #333; }
+        .header-links { margin-bottom: 20px; }
+        .header-links a { color: #007bff; text-decoration: none; margin-right: 20px; }
+        .header-links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <h1>Items</h1>
+    <div class="header-links">
+        <a href="{% url 'item_list' %}">Items</a>
+        <a href="{% url 'order_list' %}">Orders</a>
+        <a href="{% url 'create_order' %}">Create Order</a>
+    </div>
+    
+    {% if items %}
+    <div class="items-grid">
+        {% for item in items %}
+        <div class="item-card">
+            <div class="item-name">{{ item.name }}</div>
+            <div class="item-description">{{ item.description|default:"No description available." }}</div>
+            <div class="item-price">${{ item.price }}</div>
+            <a href="{% url 'item_detail' item.id %}" class="item-link">View Details</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p>No items available.</p>
+    {% endif %}
+</body>
+</html>
+
+

@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Canceled</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 100px auto; padding: 20px; text-align: center; }
+        h1 { color: #dc3545; }
+        a { color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <h1>Payment Canceled</h1>
+    <p>Your payment was not processed.</p>
+    <p><a href="{% url 'order_detail' order.id %}">Return to Order</a></p>
+</body>
+</html>

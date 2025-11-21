@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Canceled</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 100px auto; padding: 20px; text-align: center; }
+        .cancel-box { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 30px; border-radius: 8px; }
+        .cancel-icon { font-size: 48px; margin-bottom: 20px; }
+        h1 { color: #856404; margin-bottom: 20px; }
+        .links { margin-top: 30px; }
+        .links a { color: #007bff; text-decoration: none; margin: 0 15px; }
+        .links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="cancel-box">
+        <div class="cancel-icon">✗</div>
+        <h1>Payment Canceled</h1>
+        <p>Your payment was canceled. No charges were made.</p>
+        <div class="links">
+            <a href="{% url 'item_list' %}">Continue Shopping</a>
+            <a href="{% url 'order_list' %}">View Orders</a>
+        </div>
+    </div>
+</body>
+</html>
+
+

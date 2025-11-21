@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Successful</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 100px auto; padding: 20px; text-align: center; }
+        h1 { color: #28a745; }
+        a { color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <h1>✓ Thanks for your order!</h1>
+    <p>Your payment was successful.</p>
+    <p>Order #{{ order.id }} has been confirmed.</p>
+    <p><a href="{% url 'order_detail' order.id %}">View Order Details</a></p>
+</body>
+</html>

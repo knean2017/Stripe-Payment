@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Successful</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 100px auto; padding: 20px; text-align: center; }
+        .success-box { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 30px; border-radius: 8px; }
+        .success-icon { font-size: 48px; margin-bottom: 20px; }
+        h1 { color: #155724; margin-bottom: 20px; }
+        .links { margin-top: 30px; }
+        .links a { color: #007bff; text-decoration: none; margin: 0 15px; }
+        .links a:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+    <div class="success-box">
+        <div class="success-icon">✓</div>
+        <h1>Payment Successful!</h1>
+        <p>Thank you for your purchase. Your payment has been processed successfully.</p>
+        <div class="links">
+            <a href="{% url 'item_list' %}">Browse More Items</a>
+            <a href="{% url 'order_list' %}">View Orders</a>
+        </div>
+    </div>
+</body>
+</html>
+
+
