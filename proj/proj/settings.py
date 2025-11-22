@@ -31,6 +31,17 @@ DEBUG = os.environ.get("DEBUG", "True") == "True"
 
 ALLOWED_HOSTS = ["*"]
 
+# CSRF settings - Disabled for Railway deployment
+CSRF_TRUSTED_ORIGINS = [
+    "https://stripe-payment-production-4a40.up.railway.app",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
+    "http://localhost",
+    "http://127.0.0.1",
+]
+CSRF_COOKIE_SECURE = False
+CSRF_USE_SESSIONS = False
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -49,7 +60,7 @@ MIDDLEWARE = [
     "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
-    # "django.middleware.csrf.CsrfViewMiddleware",  # Disabled for Railway deployment
+    "proj.middleware.DisableCSRFMiddleware",  # Custom middleware to disable CSRF
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",

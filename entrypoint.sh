@@ -50,6 +50,64 @@ for item_data in mock_items:
 print(f"Mock items setup complete. Created {created_count} new items.")
 EOF
 
+echo "Creating mock discounts..."
+python manage.py shell << EOF
+from orders.models.discount import Discount
+
+mock_discounts = [
+    {"name": "10% Off", "discount_type": "percentage", "value": 10.00, "currency": "usd"},
+    {"name": "20% Off", "discount_type": "percentage", "value": 20.00, "currency": "usd"},
+    {"name": "15% Off", "discount_type": "percentage", "value": 15.00, "currency": "usd"},
+    {"name": "$50 Off", "discount_type": "fixed", "value": 50.00, "currency": "usd"},
+    {"name": "$25 Off", "discount_type": "fixed", "value": 25.00, "currency": "usd"},
+    {"name": "€30 Off", "discount_type": "fixed", "value": 30.00, "currency": "eur"},
+    {"name": "5% Off", "discount_type": "percentage", "value": 5.00, "currency": "eur"},
+]
+
+created_count = 0
+for discount_data in mock_discounts:
+    discount, created = Discount.objects.get_or_create(
+        name=discount_data["name"],
+        defaults={
+            "discount_type": discount_data["discount_type"],
+            "value": discount_data["value"],
+            "currency": discount_data["currency"]
+        }
+    )
+    if created:
+        created_count += 1
+        print(f"Created discount: {discount.name}")
+
+print(f"Mock discounts setup complete. Created {created_count} new discounts.")
+EOF
+
+echo "Creating mock taxes..."
+python manage.py shell << EOF
+from orders.models.tax import Tax
+
+mock_taxes = [
+    {"name": "Standard Tax", "percentage": 8.00},
+    {"name": "Sales Tax", "percentage": 10.00},
+    {"name": "VAT", "percentage": 20.00},
+    {"name": "Low Tax", "percentage": 5.00},
+    {"name": "High Tax", "percentage": 15.00},
+]
+
+created_count = 0
+for tax_data in mock_taxes:
+    tax, created = Tax.objects.get_or_create(
+        name=tax_data["name"],
+        defaults={
+            "percentage": tax_data["percentage"]
+        }
+    )
+    if created:
+        created_count += 1
+        print(f"Created tax: {tax.name}")
+
+print(f"Mock taxes setup complete. Created {created_count} new taxes.")
+EOF
+
 echo "Starting Django development server on port 8000..."
 exec python manage.py runserver 0.0.0.0:8000
 
