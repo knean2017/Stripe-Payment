@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Stripe Payment Integration - Django E-commerce Project
 
 A Django-based e-commerce application with Stripe PaymentIntent integration, supporting multi-currency payments (USD/EUR), order management, discounts, and tax calculations.
@@ -163,7 +162,7 @@ proj/
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
-├── docker-entrypoint.sh
+├── entrypoint.sh
 └── README.md
 ```
 
@@ -215,10 +214,12 @@ proj/
 
 3. **Login** with your superuser credentials
 
-4. **Add test data**:
-   - Create Items (name, description, price)
-   - Create Discounts (percentage or fixed amount)
-   - Create Tax rates (percentage)
+4. **Mock data is automatically created** on deployment:
+   - 8 mock items
+   - 7 mock discounts
+   - 5 mock taxes
+   
+   You can also manually add more via the admin panel.
 
 ## 🧪 Testing the Application
 
@@ -275,24 +276,26 @@ proj/
 1. **Go to** https://railway.app
 2. **Create new project** → "Deploy from GitHub repo"
 3. **Select your repository**
-4. **Configure environment variables**:
+4. **Railway will automatically detect the Dockerfile** and use it for deployment
+5. **Configure environment variables** in Railway dashboard:
    ```
    SECRET_KEY=<generate-strong-key>
    DEBUG=False
-   ALLOWED_HOSTS=*.railway.app,yourdomain.com
-   STRIPE_SECRET_KEY=sk_live_...
-   STRIPE_PUBLISHABLE_KEY=pk_live_...
+   STRIPE_SECRET_KEY=sk_live_... (or sk_test_... for testing)
+   STRIPE_PUBLISHABLE_KEY=pk_live_... (or pk_test_... for testing)
    USD_TO_EUR_RATE=0.92
    ```
-5. **Deploy** - Railway will automatically detect Django and deploy
-6. **Run migrations**:
-   - Go to your service → "Deployments" → "View Logs"
-   - Or use Railway CLI: `railway run python manage.py migrate`
-7. **Create superuser**:
-   - Railway CLI: `railway run python manage.py createsuperuser`
-   - Or use Railway's web terminal
+6. **Deploy** - Railway will automatically:
+   - Build the Docker image
+   - Run database migrations
+   - Create superuser (admin/admin123)
+   - Create mock items, discounts, and taxes
+   - Collect static files
+   - Start the server
 
-**Admin Panel**: `https://your-app.railway.app/admin`
+**Note**: Migrations, superuser creation, and mock data setup happen automatically on deployment via the entrypoint script.
+
+**Admin Panel**: `https://stripe-payment-production-4a40.up.railway.app/admin`
 
 ### Production Checklist
 
@@ -300,8 +303,8 @@ proj/
 - [ ] Generate strong `SECRET_KEY` (use: `python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"`)
 - [ ] Update `ALLOWED_HOSTS` with your domain
 - [ ] Use Stripe live keys (`sk_live_...` and `pk_live_...`)
-- [ ] Run migrations: `python manage.py migrate`
-- [ ] Create superuser: `python manage.py createsuperuser`
+- [ ] Run migrations: `python manage.py migrate` (automatic via entrypoint.sh)
+- [ ] Create superuser: `python manage.py createsuperuser` (automatic via entrypoint.sh - admin/admin123)
 - [ ] Collect static files: `python manage.py collectstatic`
 - [ ] Set up SSL/HTTPS (most platforms do this automatically)
 - [ ] Test payment flow with real Stripe test cards
@@ -412,14 +415,14 @@ docker-compose exec web python manage.py createsuperuser
 
 ### Access the Application
 
-**Live URL**: [Add your deployed URL here after deployment]
+**Live URL**: https://stripe-payment-production-4a40.up.railway.app
 
-**Admin Panel**: [Your deployed URL]/admin
+**Admin Panel**: https://stripe-payment-production-4a40.up.railway.app/admin
 
-### Test Credentials (if provided)
+### Test Credentials
 
-- **Username**: [admin username]
-- **Password**: [admin password]
+- **Username**: `admin`
+- **Password**: `admin123`
 
 ### Testing the Live Application
 
@@ -441,11 +444,33 @@ docker-compose exec web python manage.py createsuperuser
 
 ### Admin Panel Features
 
-- **Items Management**: Create, edit, delete items
+- **Items Management**: Create, edit, delete items (8 mock items are pre-loaded)
 - **Orders View**: See all orders with payment status
-- **Discounts**: Create percentage or fixed amount discounts
-- **Tax Rates**: Configure tax percentages
+- **Discounts**: Create percentage or fixed amount discounts (7 mock discounts are pre-loaded)
+- **Tax Rates**: Configure tax percentages (5 mock taxes are pre-loaded)
 - **Order Details**: View complete order information including items, totals, and payment status
 
+### Pre-loaded Mock Data
+
+The application automatically creates the following mock data on deployment:
+
+**Items (8)**:
+- Premium Laptop ($1,299.99)
+- Wireless Headphones ($199.99)
+- Smart Watch ($299.99)
+- Gaming Mouse ($79.99)
+- Mechanical Keyboard ($149.99)
+- 4K Monitor ($449.99)
+- USB-C Hub ($49.99)
+- Webcam HD ($89.99)
+
+**Discounts (7)**:
+- 10% Off, 20% Off, 15% Off (percentage, USD)
+- $50 Off, $25 Off (fixed, USD)
+- €30 Off (fixed, EUR)
+- 5% Off (percentage, EUR)
+
+**Taxes (5)**:
+- Standard Tax (8%), Sales Tax (10%), VAT (20%), Low Tax (5%), High Tax (15%)
+
 ---
-=======
