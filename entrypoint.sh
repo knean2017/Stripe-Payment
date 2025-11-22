@@ -19,6 +19,37 @@ else:
     print("Superuser 'admin' already exists.")
 EOF
 
+echo "Creating mock items..."
+python manage.py shell << EOF
+from items.models import Item
+
+mock_items = [
+    {"name": "Premium Laptop", "description": "High-performance laptop with 16GB RAM and 512GB SSD", "price": 1299.99},
+    {"name": "Wireless Headphones", "description": "Noise-cancelling wireless headphones with 30-hour battery", "price": 199.99},
+    {"name": "Smart Watch", "description": "Fitness tracker with heart rate monitor and GPS", "price": 299.99},
+    {"name": "Gaming Mouse", "description": "RGB gaming mouse with 16000 DPI sensor", "price": 79.99},
+    {"name": "Mechanical Keyboard", "description": "RGB mechanical keyboard with Cherry MX switches", "price": 149.99},
+    {"name": "4K Monitor", "description": "27-inch 4K UHD monitor with HDR support", "price": 449.99},
+    {"name": "USB-C Hub", "description": "7-in-1 USB-C hub with HDMI, USB 3.0, and SD card reader", "price": 49.99},
+    {"name": "Webcam HD", "description": "1080p HD webcam with auto-focus and built-in microphone", "price": 89.99},
+]
+
+created_count = 0
+for item_data in mock_items:
+    item, created = Item.objects.get_or_create(
+        name=item_data["name"],
+        defaults={
+            "description": item_data["description"],
+            "price": item_data["price"]
+        }
+    )
+    if created:
+        created_count += 1
+        print(f"Created item: {item.name}")
+
+print(f"Mock items setup complete. Created {created_count} new items.")
+EOF
+
 echo "Starting Django development server on port 8000..."
 exec python manage.py runserver 0.0.0.0:8000
 
