@@ -1,34 +1,23 @@
-#!/bin/sh
+#!/bin/bash
 set -e
 
-echo "Running migrations..."
+echo "Running database migrations..."
 python manage.py migrate --noinput
 
 echo "Collecting static files..."
-python manage.py collectstatic --noinput --clear
+python manage.py collectstatic --noinput
 
-if [ -n "$DJANGO_SUPERUSER_USERNAME" ] && [ -n "$DJANGO_SUPERUSER_PASSWORD" ]; then
-  echo "Ensuring superuser exists..."
-  python - <<'PY'
-import os
-import django
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'proj.settings')
-django.setup()
+echo "Creating superuser if it doesn't exist..."
+python manage.py shell << EOF
 from django.contrib.auth import get_user_model
 User = get_user_model()
-username = os.environ.get('DJANGO_SUPERUSER_USERNAME')
-email = os.environ.get('DJANGO_SUPERUSER_EMAIL', '')
-password = os.environ.get('DJANGO_SUPERUSER_PASSWORD')
-if username and password:
-    if not User.objects.filter(username=username).exists():
-        User.objects.create_superuser(username=username, email=email, password=password)
-        print('Superuser created.')
-    else:
-        print('Superuser already exists.')
+if not User.objects.filter(username='admin').exists():
+    User.objects.create_superuser('admin', 'admin@example.com', 'admin123')
+    print("Superuser 'admin' created successfully.")
 else:
-    print('Superuser env vars not provided; skipping.')
-PY
-fi
+    print("Superuser 'admin' already exists.")
+EOF
 
 echo "Starting Gunicorn..."
-exec gunicorn proj.wsgi:application --bind 0.0.0.0:8000 --workers 3
+exec gunicorn proj.wsgi:application --bind 0.0.0.0:${PORT:-8000} --workers 2 --threads 2
+

@@ -294,44 +294,6 @@ proj/
 
 **Admin Panel**: `https://your-app.railway.app/admin`
 
-#### Option 2: Render
-
-1. **Go to** https://render.com
-2. **Create new "Web Service"**
-3. **Connect GitHub repository**
-4. **Configure**:
-   - **Build Command**: `pip install -r requirements.txt && cd proj && python manage.py collectstatic --noinput`
-   - **Start Command**: `cd proj && gunicorn proj.wsgi:application`
-5. **Set environment variables**:
-   - Use Render's environment variable section
-   - Add all required variables from `.env`
-6. **Deploy**
-
-**Note**: `gunicorn` is already included in `requirements.txt`
-
-#### Option 3: Vercel (Serverless)
-
-1. **Install Vercel CLI**:
-   ```bash
-   npm i -g vercel
-   ```
-
-2. **Login**:
-   ```bash
-   vercel login
-   ```
-
-3. **Deploy**:
-   ```bash
-   vercel
-   ```
-
-4. **Set environment variables** in Vercel dashboard
-
-5. **Configure `vercel.json`** (already included in project)
-
-**Note**: Vercel requires special configuration for Django. See `vercel.json` for details.
-
 ### Production Checklist
 
 - [ ] Set `DEBUG=False`
@@ -343,14 +305,6 @@ proj/
 - [ ] Collect static files: `python manage.py collectstatic`
 - [ ] Set up SSL/HTTPS (most platforms do this automatically)
 - [ ] Test payment flow with real Stripe test cards
-
-### Online Deployment Options
-
-- **Vercel**: Serverless Django deployment
-- **Railway**: Easy PostgreSQL + Django hosting
-- **Render**: Free tier available with PostgreSQL
-- **Heroku**: Classic Django hosting platform
-- **DigitalOcean App Platform**: Simple container deployment
 
 ## 📝 Usage Examples
 
