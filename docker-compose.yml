@@ -1,0 +1,16 @@
+services:
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./proj:/app/proj
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DJANGO_SETTINGS_MODULE=proj.settings
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+

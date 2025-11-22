@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Order #{{ order.id }}</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+        .order-item { border-bottom: 1px solid #eee; padding: 10px 0; display: flex; justify-content: space-between; }
+        .summary-row { display: flex; justify-content: space-between; padding: 10px 0; }
+        .subtotal { border-top: 1px solid #ddd; margin-top: 10px; padding-top: 10px; }
+        .discount { color: #dc3545; }
+        .tax { color: #6c757d; }
+        .total { font-size: 24px; font-weight: bold; margin-top: 20px; padding-top: 20px; border-top: 2px solid #333; }
+        button { background: #28a745; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; margin-top: 20px; }
+        button:hover { background: #218838; }
+        button:disabled { opacity: .6; cursor: not-allowed; }
+        .paid { color: #28a745; font-weight: bold; }
+        .label { color: #6c757d; }
+        #payment-form { margin-top: 20px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; display: none; }
+        #card-element { padding: 12px; border: 1px solid #ccc; border-radius: 4px; margin: 10px 0; }
+        .card-errors { color: #dc3545; margin-top: 10px; }
+        .payment-buttons { display: flex; gap: 10px; margin-top: 15px; }
+    </style>
+</head>
+<body>
+    <div class="header-links" style="margin-bottom: 20px;">
+        <a href="{% url 'item_list' %}" style="color: #007bff; text-decoration: none; margin-right: 20px;">Items</a>
+        <a href="{% url 'order_list' %}" style="color: #007bff; text-decoration: none; margin-right: 20px;">Orders</a>
+        <a href="{% url 'create_order' %}" style="color: #007bff; text-decoration: none;">Create Order</a>
+    </div>
+    <h1>Order #{{ order.id }}</h1>
+    <p>Created: {{ order.created_at|date:"F d, Y H:i" }}</p>
+    
+    {% if order.is_paid %}
+        <p class="paid">✓ PAID</p>
+    {% endif %}
+    
+    <h2>Items:</h2>
+    {% for order_item in order.order_items.all %}
+    <div class="order-item">
+        <div>
+            <strong>{{ order_item.item.name }}</strong> x {{ order_item.quantity }}
+        </div>
+        <div>${{ order_item.get_subtotal }}</div>
+    </div>
+    {% endfor %}
+    
+    <div class="summary-row subtotal">
+        <div><strong>Subtotal:</strong></div>
+        <div><strong>${{ order.get_subtotal }}</strong></div>
+    </div>
+     
+    {% if order.discount %}
+    <div class="summary-row discount">
+        <div>Discount ({{ order.discount.name }}):</div>
+        <div>-${{ order.get_discount_amount }}</div>
+    </div>
+    {% endif %}
+    
+    {% if order.tax %}
+    <div class="summary-row tax">
+        <div>Tax ({{ order.tax.name }} - {{ order.tax.percentage }}%):</div>
+        <div>+${{ order.get_tax_amount }}</div>
+    </div>
+    {% endif %}
+   
+    <div class="total summary-row">
+        <div>Total:</div>
+        <div>${{ order.get_total }} {{ order.currency|upper }}</div>
+    </div>
+    
+    {% if not order.is_paid %}
+    <button id="payment-button">Proceed to Payment</button>
+    
+    <div id="payment-form">
+        <div id="card-element"></div>
+        <div id="card-errors" role="alert"></div>
+        <div class="payment-buttons">
+            <button id="submit-button" type="submit">Pay ${{ order.get_total }} {{ order.currency|upper }}</button>
+            <button id="cancel-button" type="button" class="btn-cancel">Cancel</button>
+        </div>
+    </div>
+    {% endif %}
+    
+    <script>
+        const stripe = Stripe('{{ stripe_publishable_key }}');
+        const paymentButton = document.getElementById('payment-button');
+        const paymentForm = document.getElementById('payment-form');
+        const submitButton = document.getElementById('submit-button');
+        const cancelButton = document.getElementById('cancel-button');
+        let elements, cardElement, clientSecret;
+        
+        if (paymentButton) {
+            paymentButton.addEventListener('click', async () => {
+                paymentButton.disabled = true;
+                paymentButton.textContent = 'Loading...';
+                
+                try {
+                    const response = await fetch('/orders/{{ order.id }}/buy/', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRFToken': '{{ csrf_token }}',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to create payment');
+                    }
+                    
+                    const data = await response.json();
+                    clientSecret = data.client_secret;
+                    
+                    elements = stripe.elements();
+                    cardElement = elements.create('card');
+                    cardElement.mount('#card-element');
+                    
+                    cardElement.on('change', ({error}) => {
+                        const displayError = document.getElementById('card-errors');
+                        if (error) {
+                            displayError.textContent = error.message;
+                        } else {
+                            displayError.textContent = '';
+                        }
+                    });
+                    
+                    paymentButton.style.display = 'none';
+                    paymentForm.style.display = 'block';
+                } catch (error) {
+                    alert(error.message || 'Error loading payment form');
+                    paymentButton.disabled = false;
+                    paymentButton.textContent = 'Proceed to Payment';
+                }
+            });
+            
+            if (cancelButton) {
+                cancelButton.addEventListener('click', () => {
+                    // Redirect to cancel page
+                    window.location.href = '/orders/{{ order.id }}/cancel/';
+                });
+            }
+            
+            if (submitButton) {
+                submitButton.addEventListener('click', async (e) => {
+                    e.preventDefault();
+                    submitButton.disabled = true;
+                    submitButton.textContent = 'Processing...';
+                    
+                    const {error, paymentIntent} = await stripe.confirmCardPayment(clientSecret, {
+                        payment_method: {
+                            card: cardElement,
+                        }
+                    });
+                    
+                    if (error) {
+                        document.getElementById('card-errors').textContent = error.message;
+                        submitButton.disabled = false;
+                        submitButton.textContent = 'Pay ${{ order.get_total }} {{ order.currency|upper }}';
+                    } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+                        window.location.href = '/orders/{{ order.id }}/success/';
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

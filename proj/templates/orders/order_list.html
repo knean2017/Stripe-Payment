@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Orders</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 50px auto; padding: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background: #f8f9fa; font-weight: bold; }
+        .paid { color: #28a745; font-weight: bold; }
+        .unpaid { color: #dc3545; }
+        a { color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <h1>All Orders</h1>
+    <div class="header-links" style="margin-bottom: 20px;">
+        <a href="{% url 'item_list' %}">Items</a>
+    </div>
+    <p><a href="{% url 'create_order' %}">Create New Order</a></p>
+    
+    <table>
+        <thead>
+            <tr>
+                <th>Order #</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Status</th>
+                <th>Action</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>{{ order.id }}</td>
+                <td>{{ order.created_at|date:"M d, Y" }}</td>
+                <td>${{ order.get_total }} {{ order.currency|upper }}</td>
+                <td>
+                    {% if order.is_paid %}
+                        <span class="paid">Paid</span>
+                    {% else %}
+                        <span class="unpaid">Unpaid</span>
+                    {% endif %}
+                </td>
+                <td><a href="{% url 'order_detail' order.id %}">View</a></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

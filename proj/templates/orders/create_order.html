@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create Order</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; position: relative; }
+        .cancel-icon { position: absolute; top: 20px; left: 20px; width: 40px; height: 40px; border-radius: 50%; background: #dc3545; color: white; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 24px; font-weight: bold; cursor: pointer; transition: background 0.3s; }
+        .cancel-icon:hover { background: #c82333; }
+        .cancel-icon::before { content: '×'; }
+        .item { border: 1px solid #ddd; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .item-name { font-weight: bold; font-size: 18px; }
+        .item-price { color: #28a745; font-size: 16px; margin: 5px 0; }
+        .section { margin: 30px 0; padding: 20px; background: #f8f9fa; border-radius: 5px; }
+        .section h3 { margin-top: 0; }
+        select { padding: 8px; width: 100%; max-width: 300px; }
+        input[type="number"] { width: 60px; padding: 5px; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0056b3; }
+        .button-group { display: flex; gap: 10px; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="header-links" style="margin-bottom: 20px;">
+        <a href="{% url 'item_list' %}" style="color: #007bff; text-decoration: none; margin-right: 20px;">Items</a>
+        <a href="{% url 'order_list' %}" style="color: #007bff; text-decoration: none; margin-right: 20px;">Orders</a>
+    </div>
+    <h1>Create New Order</h1>
+    
+    {% if messages %}
+    <div style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+        {% for message in messages %}
+        <div>{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
+    <form method="post" action="{% url 'add_to_order' %}">
+        {% csrf_token %}
+        
+        <div class="section">
+            <h3>Order Currency</h3>
+            <select name="currency" id="currency-selector" required data-rate="{{ usd_to_eur_rate|default:'0.92' }}">
+                <option value="usd" {% if not selected_currency or selected_currency == 'usd' %}selected{% endif %}>USD - US Dollar</option>
+                <option value="eur" {% if selected_currency == 'eur' %}selected{% endif %}>EUR - Euro</option>
+            </select>
+            <p style="font-size: 12px; color: #6c757d; margin-top: 5px;">Select the currency for this order. All items will be charged in the selected currency.</p>
+        </div>
+        
+        <h2>Select Items</h2>
+        {% for item in items %}
+        <div class="item" data-usd-price="{{ item.price }}">
+            <div class="item-name">{{ item.name }}</div>
+            <div class="item-price" data-currency="usd">${{ item.price }} USD</div>
+            <div>{{ item.description }}</div>
+            <label>
+                Quantity: 
+                <input type="number" name="quantity_{{ item.id }}" min="0" max="100" value="0">
+            </label>
+        </div>
+        {% endfor %}
+        
+        <div class="section">
+            <h3>Discount (Optional)</h3>
+            <select name="discount">
+                <option value="">No discount</option>
+                {% for discount in discounts %}
+                <option value="{{ discount.id }}">{{ discount.name }} - 
+                    {% if discount.discount_type == 'percentage' %}
+                        {{ discount.value }}% off
+                    {% else %}
+                        ${{ discount.value }} off
+                    {% endif %}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="section">
+            <h3>Tax (Optional)</h3>
+            <select name="tax">
+                <option value="">No tax</option>
+                {% for tax in taxes %}
+                <option value="{{ tax.id }}">{{ tax.name }} ({{ tax.percentage }}%)</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <button type="submit">Create Order</button>
+    </form>
+    
+    <script>
+        const currencySelector = document.getElementById('currency-selector');
+        const items = document.querySelectorAll('.item');
+        const usdToEurRate = parseFloat(currencySelector.getAttribute('data-rate'));
+        
+        function updatePrices() {
+            const selectedCurrency = currencySelector.value;
+            items.forEach(item => {
+                const priceElement = item.querySelector('.item-price');
+                const usdPrice = parseFloat(item.getAttribute('data-usd-price'));
+                
+                if (selectedCurrency === 'eur') {
+                    const eurPrice = (usdPrice * usdToEurRate).toFixed(2);
+                    priceElement.textContent = `€${eurPrice} EUR`;
+                    priceElement.setAttribute('data-currency', 'eur');
+                } else {
+                    priceElement.textContent = `$${usdPrice.toFixed(2)} USD`;
+                    priceElement.setAttribute('data-currency', 'usd');
+                }
+            });
+        }
+        
+        currencySelector.addEventListener('change', updatePrices);
+        // Update on page load
+        updatePrices();
+    </script>
+</body>
+</html>

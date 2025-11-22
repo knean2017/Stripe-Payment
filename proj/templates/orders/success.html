@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Successful</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 100px auto; padding: 20px; text-align: center; }
+        h1 { color: #28a745; }
+        a { color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div style="margin-bottom: 20px; text-align: left; max-width: 600px; margin-left: auto; margin-right: auto;">
+        <a href="{% url 'item_list' %}" style="color: #007bff; text-decoration: none; margin-right: 20px;">Items</a>
+        <a href="{% url 'order_list' %}" style="color: #007bff; text-decoration: none; margin-right: 20px;">Orders</a>
+        <a href="{% url 'create_order' %}" style="color: #007bff; text-decoration: none;">Create Order</a>
+    </div>
+    <h1>✓ Thanks for your order!</h1>
+    <p>Your payment was successful.</p>
+    <p>Order #{{ order.id }} has been confirmed.</p>
+    <p><a href="{% url 'order_detail' order.id %}">View Order Details</a></p>
+</body>
+</html>
