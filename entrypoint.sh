@@ -19,6 +19,6 @@ else:
     print("Superuser 'admin' already exists.")
 EOF
 
-echo "Starting Django development server on port ${PORT:-8000}..."
-exec python manage.py runserver 0.0.0.0:${PORT:-8000}
+echo "Starting Django development server on port 8000..."
+exec python manage.py runserver 0.0.0.0:8000
 
