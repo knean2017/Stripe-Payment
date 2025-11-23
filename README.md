@@ -408,7 +408,6 @@ docker-compose exec web python manage.py createsuperuser
 # http://localhost:8000
 # http://localhost:8000/admin
 ```
-
 ---
 
 ## 🌍 Live Deployment
